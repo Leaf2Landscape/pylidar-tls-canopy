@@ -13,19 +13,27 @@ RUN apt-get update && apt-get install -y \
 # Create directories for RIEGL libraries
 RUN mkdir -p /opt/riegl/rivlib /opt/riegl/rdblib
 
-# Copy and extract RIEGL libraries
-COPY riegl_libs/rivlib-2_6_0-x86_64-linux-gcc11.zip /tmp/
-COPY riegl_libs/rdblib-2.4.1-x86_64-linux.tar.gz /tmp/
+# Copy decrypted RIEGL libraries from .riegl_libs directory
+# The GitHub Actions workflow decrypts the .gpg files before building
+COPY .riegl_libs /tmp/riegl_libs/
 
-RUN unzip /tmp/rivlib-2_6_0-x86_64-linux-gcc11.zip -d /opt/riegl/rivlib && \
-    tar -xzf /tmp/rdblib-2.4.1-x86_64-linux.tar.gz -C /opt/riegl/rdblib && \
-    rm /tmp/rivlib-2_6_0-x86_64-linux-gcc11.zip /tmp/rdblib-2.4.1-x86_64-linux.tar.gz
-
-# Find the actual extracted directory names and set up symlinks for consistent paths
-RUN RIVLIB_DIR=$(find /opt/riegl/rivlib -maxdepth 1 -type d -name "rivlib-*" | head -1) && \
-    RDBLIB_DIR=$(find /opt/riegl/rdblib -maxdepth 1 -type d -name "rdblib-*" | head -1) && \
-    ln -s "$RIVLIB_DIR" /opt/riegl/rivlib/current && \
-    ln -s "$RDBLIB_DIR" /opt/riegl/rdblib/current
+# Extract RIEGL libraries if they exist
+RUN if [ "$(ls -A /tmp/riegl_libs 2>/dev/null)" ]; then \
+        echo "Installing RIEGL libraries from build context..."; \
+        # Find and extract archives \
+        find /tmp/riegl_libs -name "rivlib*.tar.gz" -exec tar -xzf {} -C /opt/riegl/rivlib \; 2>/dev/null || true; \
+        find /tmp/riegl_libs -name "rivlib*.zip" -exec unzip -q {} -d /opt/riegl/rivlib \; 2>/dev/null || true; \
+        find /tmp/riegl_libs -name "rdblib*.tar.gz" -exec tar -xzf {} -C /opt/riegl/rdblib \; 2>/dev/null || true; \
+        # Create symlinks to 'current' for consistent paths \
+        RIVLIB_DIR=$(find /opt/riegl/rivlib -maxdepth 1 -type d -name "rivlib-*" | head -1); \
+        RDBLIB_DIR=$(find /opt/riegl/rdblib -maxdepth 1 -type d -name "rdblib-*" | head -1); \
+        if [ -n "$RIVLIB_DIR" ]; then ln -sf "$RIVLIB_DIR" /opt/riegl/rivlib/current; fi; \
+        if [ -n "$RDBLIB_DIR" ]; then ln -sf "$RDBLIB_DIR" /opt/riegl/rdblib/current; fi; \
+        rm -rf /tmp/riegl_libs; \
+        echo "RIEGL libraries installed"; \
+    else \
+        echo "No RIEGL libraries found - extensions will not be built"; \
+    fi
 
 USER $MAMBA_USER
 
