@@ -110,6 +110,7 @@ pavd_output/
 
 # Temporary/lock files
 .~lock.*
+test-docker-build.sh
 
 # Build artifacts
 *.o
