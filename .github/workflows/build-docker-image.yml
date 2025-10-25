@@ -72,9 +72,7 @@ jobs:
               exit 1
             fi
 
-            # Extract archive
-            tar -xzf .riegl_libs/rivlib.tar.gz -C .riegl_libs/
-            echo "✓ RiVLib decrypted and extracted"
+            echo "✓ RiVLib decrypted: $(ls -lh .riegl_libs/rivlib.tar.gz | awk '{print $5}')"
           else
             echo "ERROR: .riegl_libs/rivlib.tar.gz.gpg not found"
             exit 1
@@ -91,46 +89,16 @@ jobs:
               exit 1
             fi
 
-            # Extract archive
-            tar -xzf .riegl_libs/rdblib.tar.gz -C .riegl_libs/
-            echo "✓ RDBLib decrypted and extracted"
+            echo "✓ RDBLib decrypted: $(ls -lh .riegl_libs/rdblib.tar.gz | awk '{print $5}')"
           else
             echo "ERROR: .riegl_libs/rdblib.tar.gz.gpg not found"
             exit 1
           fi
 
-          # List decrypted contents
+          # List decrypted contents (Docker will extract these)
           echo ""
-          echo "Contents of .riegl_libs/ after decryption:"
-          ls -la .riegl_libs/
-
-          # Verify extracted directories exist
-          echo ""
-          RIVLIB_DIR=$(find .riegl_libs -maxdepth 1 -type d -name "rivlib-*" | head -1)
-          RDBLIB_DIR=$(find .riegl_libs -maxdepth 1 -type d -name "rdblib-*" | head -1)
-
-          if [ -z "$RIVLIB_DIR" ]; then
-            echo "ERROR: No rivlib-* directory found after extraction"
-            exit 1
-          fi
-
-          if [ -z "$RDBLIB_DIR" ]; then
-            echo "ERROR: No rdblib-* directory found after extraction"
-            exit 1
-          fi
-
-          echo "Found RiVLib: $RIVLIB_DIR"
-          echo "Found RDBLib: $RDBLIB_DIR"
-
-          # Show library directory structure
-          echo ""
-          echo "RiVLib directory structure:"
-          ls -la "$RIVLIB_DIR/" | head -20
-
-          echo ""
-          echo "RDBLib directory structure:"
-          ls -la "$RDBLIB_DIR/" | head -20
-          ls -la "$RDBLIB_DIR/library/" | head -10 || echo "Warning: No library/ subdirectory"
+          echo "Decrypted files ready for Docker build:"
+          ls -lh .riegl_libs/*.tar.gz 2>/dev/null || echo "No .tar.gz files found"
 
       # Alternative: Download from private cloud storage (uncomment if using)
       # - name: Download RIEGL libraries from private storage

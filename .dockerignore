@@ -44,13 +44,11 @@ pavd_output/
 *.rxp
 *.rdbx
 
-# RIEGL libraries - allow extracted directories, block intermediate files
+# RIEGL libraries - allow decrypted archives, block encrypted files
 !.riegl_libs/
-.riegl_libs/*.tar.gz
-.riegl_libs/*.zip
+!.riegl_libs/*.tar.gz
+!.riegl_libs/*.zip
 .riegl_libs/*.gpg
-!.riegl_libs/rivlib-*/
-!.riegl_libs/rdblib-*/
 !.riegl_libs/README.md
 
 # Temporary files
