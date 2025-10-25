@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - '.devcontainer/Dockerfile'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/build-docker-image.yml'
       - 'setup.py'
       - 'src/**'
       - 'pylidar_tls_canopy/**'
