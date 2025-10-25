@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+*.egg-info
+.pytest_cache
+.coverage
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation (not needed in container)
+docs/
+*.md
+!README.md
+
+# Notebooks (optional - uncomment if not needed in container)
+# notebooks/
+
+# Output directories
+pavd_output/
+
+# RIEGL data (can be large)
+*.RiSCAN/
+*.rxp
+*.rdbx
+
+# Temporary files
+*.log
+.~lock.*
+
+# GitHub
+.github/

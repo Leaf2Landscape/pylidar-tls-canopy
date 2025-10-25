@@ -1,0 +1,116 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions and compiled libraries
+*.so
+*.dll
+*.dylib
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# RIEGL proprietary libraries (compiled binaries)
+# These require RIVLIB_ROOT and RDBLIB_ROOT to build
+# See docs/Building_Riegl_Extensions.md for instructions
+riegl_rxp*.so
+riegl_rdb*.so
+riegl_rxp*.dll
+riegl_rdb*.dll
+riegl_rxp*.dylib
+riegl_rdb*.dylib
+
+# RIEGL library archives (unencrypted)
+# Encrypted .gpg files are safe to commit
+.riegl_libs/*.tar.gz
+.riegl_libs/*.zip
+.riegl_libs/rivlib-*/
+.riegl_libs/rdblib-*/
+# But allow encrypted versions
+!.riegl_libs/*.gpg
+!.riegl_libs/README.md
+
+# RIEGL project data (can be large, project-specific)
+*.RiSCAN/
+*.rdbx
+*.rxp
+
+# Output directories
+pavd_output/
+
+# Temporary/lock files
+.~lock.*
+
+# Build artifacts
+*.o
+*.obj

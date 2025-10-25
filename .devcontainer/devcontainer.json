@@ -1,0 +1,30 @@
+{
+	"name": "pylidar-tls-canopy",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": ".."
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-toolsai.jupyter",
+				"ms-toolsai.jupyter-keymap",
+				"ms-toolsai.jupyter-renderers"
+			],
+			"settings": {
+				"python.defaultInterpreterPath": "/opt/conda/envs/pylidar-tls-canopy/bin/python",
+				"python.terminal.activateEnvironment": true,
+				"python.terminal.activateEnvInCurrentTerminal": true
+			}
+		}
+	},
+	"mounts": [
+		"source=${localWorkspaceFolder}/riegl_libs,target=/workspace/riegl_libs,type=bind,consistency=cached"
+	],
+	"postCreateCommand": "bash -c 'set -e && sudo /usr/local/bin/setup-riegl.sh && sudo chown -R mambauser:mambauser /opt/conda/envs/pylidar-tls-canopy && echo \"Installing pylidar-tls-canopy package...\" && cd /workspace && micromamba run -n pylidar-tls-canopy python setup.py develop --no-deps && echo \"Installation complete!\"'",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+	"workspaceFolder": "/workspace",
+	"remoteUser": "mambauser"
+}
