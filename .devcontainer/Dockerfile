@@ -50,11 +50,11 @@ WORKDIR /workspace
 USER root
 
 # Copy RIEGL libraries if provided during build (GitHub Actions)
-# This will be empty for local builds
-COPY .riegl_libs* /tmp/riegl_libs/ 2>/dev/null || true
+# For local builds, the workflow ensures .riegl_libs directory exists (may be empty)
+COPY .riegl_libs /tmp/riegl_libs/
 
 # Install RIEGL libraries from build-time copy or prepare for runtime mounting
-RUN if [ -d /tmp/riegl_libs ] && [ "$(ls -A /tmp/riegl_libs)" ]; then \
+RUN if [ "$(ls -A /tmp/riegl_libs 2>/dev/null)" ]; then \
         echo "Installing RIEGL libraries from build context..."; \
         # Find and extract archives
         find /tmp/riegl_libs -name "*.tar.gz" -exec tar -xzf {} -C /opt/riegl/rivlib \; 2>/dev/null || true; \
