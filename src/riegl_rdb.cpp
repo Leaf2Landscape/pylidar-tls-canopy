@@ -280,8 +280,8 @@ static PyObject *rieglrdb_readFile(PyObject *self, PyObject *args)
         
         // riegl.row and riegl.column are used on older files (don't appear to be documented, but are in there)
         // newer files use RDB_RIEGL_SCAN_LINE_INDEX / RDB_RIEGL_SHOT_INDEX_LINE
-        CHECKBIND_READER(RDB_RIEGL_SCAN_LINE_INDEX.name, RDBDataTypeINT32, &pBuffer[0].scan_line_index);
-        CHECKBIND_READER(RDB_RIEGL_SHOT_INDEX_LINE.name, RDBDataTypeINT32, &pBuffer[0].shot_index_line);
+        CHECKBIND_READER2(RDB_RIEGL_SCAN_LINE_INDEX.name, "riegl.row", RDBDataTypeINT32, &pBuffer[0].scan_line_index);
+        CHECKBIND_READER2(RDB_RIEGL_SHOT_INDEX_LINE.name, "riegl.column", RDBDataTypeINT32, &pBuffer[0].shot_index_line);
         
         CHECKBIND_READER(RDB_RIEGL_TARGET_INDEX.name, RDBDataTypeUINT8, &pBuffer[0].target_index)
         CHECKBIND_READER(RDB_RIEGL_TARGET_COUNT.name, RDBDataTypeUINT8, &pBuffer[0].target_count)

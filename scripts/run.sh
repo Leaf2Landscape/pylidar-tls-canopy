@@ -1,0 +1,4 @@
+# ./run_processing.sh novoxels --parallel --max-parallel 12 --skip-existing --projects-file /scratch/project/veg3d/uqtdeve1/code/pylidar-tls-canopy/scripts/projects_test.txt --output-dir /scratch/project/veg3d/TERN_TLS_DATA/pylidar_output
+./run_processing.sh profiles --parallel --max-parallel 12 --skip-existing --projects-file projects_test.txt --output-dir pylidar_output
+
+# ./run_processing.sh grid --parallel --max-parallel 12 --skip-existing --projects-file /scratch/project/veg3d/uqtdeve1/code/pylidar-tls-canopy/scripts/projects.txt --output-dir /scratch/project/veg3d/TERN_TLS_DATA/pylidar_output

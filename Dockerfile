@@ -13,9 +13,9 @@ RUN apt-get update && apt-get install -y \
 # Create directories for RIEGL libraries
 RUN mkdir -p /opt/riegl/rivlib /opt/riegl/rdblib
 
-# Copy decrypted RIEGL libraries from .riegl_libs directory
+# Copy decrypted RIEGL libraries from riegl_libs directory
 # The GitHub Actions workflow decrypts the .gpg files before building
-COPY .riegl_libs /tmp/riegl_libs/
+COPY riegl_libs /tmp/riegl_libs/
 
 # Extract RIEGL libraries if they exist
 RUN if [ "$(ls -A /tmp/riegl_libs 2>/dev/null)" ]; then \

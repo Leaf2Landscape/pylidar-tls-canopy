@@ -40,13 +40,14 @@ def find_scan_positions(riscan_project):
     return scan_positions
 
 
-def get_scan_files(scan_pos_dir, project_path):
+def get_scan_files(scan_pos_dir, project_path, dat_dir=None):
     """
     Get RXP, RDBX, and transform file paths for a scan position.
 
     Args:
         scan_pos_dir: Path to ScanPos directory
         project_path: Path to RISCAN project root
+        dat_dir: Optional custom directory for .DAT transform files
 
     Returns:
         Dictionary with rxp_file, rdbx_file, and transform_file paths
@@ -84,10 +85,20 @@ def get_scan_files(scan_pos_dir, project_path):
     # RDBX file in project.rdb/SCANS/ScanPosXXX/SINGLESCANS/scan_name/
     rdbx_file = project_path / "project.rdb" / "SCANS" / scan_pos_name / "SINGLESCANS" / scan_name / f"{scan_name}.rdbx"
 
-    # Transform file - check both standard location and DAT directory
-    transform_file = project_path / "DAT" / f"{scan_pos_name}.DAT"
-    if not transform_file.exists():
-        transform_file = project_path / "project.rdb" / "SCANS" / f"{scan_pos_name}.DAT"
+    # Transform file - check custom directory first if provided, then standard locations
+    transform_file = None
+
+    if dat_dir is not None:
+        # Check custom DAT directory
+        custom_dat = Path(dat_dir) / f"{scan_pos_name}.DAT"
+        if custom_dat.exists():
+            transform_file = custom_dat
+
+    # Fall back to standard locations if not found in custom directory
+    if transform_file is None or not transform_file.exists():
+        transform_file = project_path / "DAT" / f"{scan_pos_name}.DAT"
+        if not transform_file.exists():
+            transform_file = project_path / "project.rdb" / "SCANS" / f"{scan_pos_name}.DAT"
 
     if not transform_file.exists():
         return None
@@ -341,6 +352,17 @@ def main():
         default='WEIGHTED',
         help='Pgap estimation method (default: WEIGHTED)'
     )
+    parser.add_argument(
+        '--dat-dir',
+        type=str,
+        default=None,
+        help='Optional custom directory containing .DAT transform files'
+    )
+    parser.add_argument(
+        '--skip-existing',
+        action='store_true',
+        help='Skip scans that already have output files'
+    )
 
     args = parser.parse_args()
 
@@ -353,7 +375,7 @@ def main():
     project_path = Path(args.riscan_project)
     scan_files = []
     for scan_pos in scan_positions:
-        files = get_scan_files(scan_pos, project_path)
+        files = get_scan_files(scan_pos, project_path, dat_dir=args.dat_dir)
         if files:
             scan_files.append(files)
         else:
@@ -361,9 +383,21 @@ def main():
 
     print(f"Processing {len(scan_files)} scans with valid file sets")
 
+    # Create output directory
+    output_path = Path(args.output)
+    output_path.mkdir(parents=True, exist_ok=True)
+
     # Process each scan
     results = []
+    skipped = 0
     for scan_info in tqdm(scan_files, desc="Processing scans"):
+        # Check if output already exists
+        if args.skip_existing:
+            expected_output = output_path / f"{scan_info['scan_pos']}_{scan_info['scan_name']}_profiles.csv"
+            if expected_output.exists():
+                skipped += 1
+                continue
+
         result = process_scan_position(
             scan_info,
             hres=args.hres,
@@ -385,7 +419,7 @@ def main():
     # Save results
     successful = len([r for r in results if r['success']])
     failed = len([r for r in results if not r['success']])
-    print(f"\nProcessing complete: {successful} successful, {failed} failed")
+    print(f"\nProcessing complete: {successful} successful, {failed} failed, {skipped} skipped (existing)")
 
     if successful > 0:
         save_results(results, args.output)

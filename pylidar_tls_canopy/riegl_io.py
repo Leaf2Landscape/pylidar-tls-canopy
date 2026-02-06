@@ -141,7 +141,7 @@ class RDBFile:
         """
         Function to reorder rdbx sourced point data according to rxp sourced pulse data
         """
-        dtype_str = {'x':'<f8', 'y':'<f8', 'z':'<f8', 
+        dtype_str = {'x':'<f8', 'y':'<f8', 'z':'<f8',
                      'range':'<f8'}
         dtype_list = []
         for name in colnames:
@@ -149,14 +149,20 @@ class RDBFile:
 
         pulse_id_rxp = pulse_scanline * np.max(pulse_scanline_idx) + pulse_scanline_idx
         pulse_id_rdb = self.get_data('scanline') * np.max(pulse_scanline_idx) + self.get_data('scanline_idx')
-        
+
         pulse_sort_idx_rxp = np.argsort(pulse_id_rxp)
         pulse_sort_idx_rdb = np.argsort(pulse_id_rdb)
         idx = np.searchsorted(pulse_id_rxp, pulse_id_rdb[pulse_sort_idx_rdb], sorter=pulse_sort_idx_rxp)
 
+        # Get target_index from RDB data
+        target_index = self.get_data('target_index')[pulse_sort_idx_rdb]
+
         output = np.empty(pulse_scanline.shape[0], dtype=dtype_list)
         for name in colnames:
-            output[idx,target_index-1] = self.get_data(name)[pulse_sort_idx_rdb]
+            data_values = self.get_data(name)[pulse_sort_idx_rdb]
+            # Loop through each point and assign to the correct target index
+            for i in range(len(idx)):
+                output[name][idx[i], target_index[i]-1] = data_values[i]
 
         return output
 
