@@ -148,6 +148,12 @@ static bool CheckRDBResult(RDBResult code, RDBContext *pContext);
             rdb_pointcloud_query_select_bind( \
                         pContext, pQuerySelect, attribute2, dataType, buffer, \
                         sizeof(RieglRDBBuffer)), pContext) ) return NULL;
+// try one name, then the other, set success flag (does not error on failure)
+#define TRYBIND_READER2(attribute1, attribute2, dataType, buffer, success) \
+        success = (rdb_pointcloud_query_select_bind(pContext, pQuerySelect, attribute1, dataType, buffer, \
+        sizeof(RieglRDBBuffer)) == RDB_SUCCESS) || \
+            (rdb_pointcloud_query_select_bind(pContext, pQuerySelect, attribute2, dataType, buffer, \
+                        sizeof(RieglRDBBuffer)) == RDB_SUCCESS);
 
 // Processes psz until a '.' is found
 // and returns string as an int. 
@@ -267,6 +273,10 @@ static PyObject *rieglrdb_readFile(PyObject *self, PyObject *args)
     RieglRDBBuffer *pBuffer = new RieglRDBBuffer[nInitSize];
     pylidar::CVector<SRieglRDBPoint> points(nInitSize, nInitSize);
 
+    bool bHasScanLine = false;
+    bool bHasShotIndex = false;
+    npy_int32 nCurrentScanLine = 0;
+
     bool bEOF = false;
     while( !bEOF )
     {
@@ -277,12 +287,13 @@ static PyObject *rieglrdb_readFile(PyObject *self, PyObject *args)
         CHECKBIND_READER(RDB_RIEGL_REFLECTANCE.name, RDBDataTypeDOUBLE, &pBuffer[0].reflectance)
         CHECKBIND_READER(RDB_RIEGL_AMPLITUDE.name, RDBDataTypeDOUBLE, &pBuffer[0].amplitude)
         CHECKBIND_READER(RDB_RIEGL_XYZ.name, RDBDataTypeDOUBLE, &pBuffer[0].xyz)
-        
+
         // riegl.row and riegl.column are used on older files (don't appear to be documented, but are in there)
         // newer files use RDB_RIEGL_SCAN_LINE_INDEX / RDB_RIEGL_SHOT_INDEX_LINE
-        CHECKBIND_READER2(RDB_RIEGL_SCAN_LINE_INDEX.name, "riegl.row", RDBDataTypeINT32, &pBuffer[0].scan_line_index);
-        CHECKBIND_READER2(RDB_RIEGL_SHOT_INDEX_LINE.name, "riegl.column", RDBDataTypeINT32, &pBuffer[0].shot_index_line);
-        
+        // Some files may have neither - these are optional attributes
+        TRYBIND_READER2(RDB_RIEGL_SCAN_LINE_INDEX.name, "riegl.row", RDBDataTypeINT32, &pBuffer[0].scan_line_index, bHasScanLine);
+        TRYBIND_READER2(RDB_RIEGL_SHOT_INDEX_LINE.name, "riegl.column", RDBDataTypeINT32, &pBuffer[0].shot_index_line, bHasShotIndex);
+
         CHECKBIND_READER(RDB_RIEGL_TARGET_INDEX.name, RDBDataTypeUINT8, &pBuffer[0].target_index)
         CHECKBIND_READER(RDB_RIEGL_TARGET_COUNT.name, RDBDataTypeUINT8, &pBuffer[0].target_count)
         
@@ -321,8 +332,22 @@ static PyObject *rieglrdb_readFile(PyObject *self, PyObject *args)
             point.x = pCurrEl->xyz[0];
             point.y = pCurrEl->xyz[1];
             point.z = pCurrEl->xyz[2];
-            point.scanline = pCurrEl->scan_line_index;
-            point.scanline_idx = pCurrEl->shot_index_line;
+            if( bHasScanLine && bHasShotIndex )
+            {
+                point.scanline = pCurrEl->scan_line_index;
+                point.scanline_idx = pCurrEl->shot_index_line;
+            }
+            else
+            {
+                // Derive pulse grouping from target_index:
+                // target_index == 1 indicates the first return of a new pulse
+                if( pCurrEl->target_index == 1 )
+                {
+                    nCurrentScanLine++;
+                }
+                point.scanline = nCurrentScanLine;
+                point.scanline_idx = 0;
+            }
             point.target_index = pCurrEl->target_index;
             point.target_count = pCurrEl->target_count;
             point.riegl_id = pCurrEl->id;

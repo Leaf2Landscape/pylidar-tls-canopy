@@ -114,7 +114,8 @@ def get_scan_files(scan_pos_dir, project_path, dat_dir=None):
 
 def process_scan_position(scan_info, hres=0.5, zres=5, ares=90,
                          min_z=35, max_z=70, min_h=0, max_h=50,
-                         reflectance_threshold=-20, method='WEIGHTED'):
+                         reflectance_threshold=-20, method='WEIGHTED',
+                         linear_only=False):
     """
     Process a single scan position to generate PAVD profiles.
 
@@ -189,35 +190,40 @@ def process_scan_position(scan_info, hres=0.5, zres=5, ares=90,
         # Compute Pgap by zenith bin
         vpp.get_pgap_theta_z()
 
-        # Calculate plant profiles using all three methods
-        hinge_pai = vpp.calcHingePlantProfiles()
-        weighted_pai = vpp.calcSolidAnglePlantProfiles()
+        # Calculate plant profiles
         linear_pai, linear_mla = vpp.calcLinearPlantProfiles(calc_mla=True)
-
-        # Convert to PAVD
-        hinge_pavd = vpp.get_pavd(hinge_pai)
         linear_pavd = vpp.get_pavd(linear_pai)
-        weighted_pavd = vpp.get_pavd(weighted_pai)
 
-        return {
+        result = {
             'success': True,
+            'linear_only': linear_only,
             'scan_pos': scan_info['scan_pos'],
             'scan_name': scan_info['scan_name'],
             'sensor_position': [x0, y0, z0],
             'ground_plane': planefit['Parameters'],
             'height_bin': vpp.height_bin,
             'pgap_theta_z': vpp.pgap_theta_z,
-            'hinge_pai': hinge_pai,
             'linear_pai': linear_pai,
-            'weighted_pai': weighted_pai,
-            'hinge_pavd': hinge_pavd,
             'linear_pavd': linear_pavd,
-            'weighted_pavd': weighted_pavd,
             'linear_mla': linear_mla,
-            'total_pai_hinge': np.sum(hinge_pai) * hres,
             'total_pai_linear': np.sum(linear_pai) * hres,
-            'total_pai_weighted': np.sum(weighted_pai) * hres,
         }
+
+        if not linear_only:
+            hinge_pai = vpp.calcHingePlantProfiles()
+            weighted_pai = vpp.calcSolidAnglePlantProfiles()
+            hinge_pavd = vpp.get_pavd(hinge_pai)
+            weighted_pavd = vpp.get_pavd(weighted_pai)
+            result.update({
+                'hinge_pai': hinge_pai,
+                'weighted_pai': weighted_pai,
+                'hinge_pavd': hinge_pavd,
+                'weighted_pavd': weighted_pavd,
+                'total_pai_hinge': np.sum(hinge_pai) * hres,
+                'total_pai_weighted': np.sum(weighted_pai) * hres,
+            })
+
+        return result
 
     except Exception as e:
         return {
@@ -243,7 +249,7 @@ def save_results(results, output_dir):
     summary_data = []
     for result in results:
         if result['success']:
-            summary_data.append({
+            row = {
                 'scan_pos': result['scan_pos'],
                 'scan_name': result['scan_name'],
                 'sensor_x': result['sensor_position'][0],
@@ -252,10 +258,12 @@ def save_results(results, output_dir):
                 'ground_intercept': result['ground_plane'][0],
                 'ground_slope_x': result['ground_plane'][1],
                 'ground_slope_y': result['ground_plane'][2],
-                'total_pai_hinge': result['total_pai_hinge'],
                 'total_pai_linear': result['total_pai_linear'],
-                'total_pai_weighted': result['total_pai_weighted'],
-            })
+            }
+            if not result.get('linear_only', False):
+                row['total_pai_hinge'] = result['total_pai_hinge']
+                row['total_pai_weighted'] = result['total_pai_weighted']
+            summary_data.append(row)
 
     if summary_data:
         summary_df = pd.DataFrame(summary_data)
@@ -267,17 +275,20 @@ def save_results(results, output_dir):
         if result['success']:
             scan_pos = result['scan_pos']
 
-            # Create DataFrame with height bins and all profile types
-            profile_df = pd.DataFrame({
+            # Create DataFrame with height bins and profile types
+            profile_data = {
                 'height': result['height_bin'],
-                'hinge_pai': result['hinge_pai'],
                 'linear_pai': result['linear_pai'],
-                'weighted_pai': result['weighted_pai'],
-                'hinge_pavd': result['hinge_pavd'],
                 'linear_pavd': result['linear_pavd'],
-                'weighted_pavd': result['weighted_pavd'],
                 'linear_mla': result['linear_mla'],
-            })
+            }
+            if not result.get('linear_only', False):
+                profile_data['hinge_pai'] = result['hinge_pai']
+                profile_data['weighted_pai'] = result['weighted_pai']
+                profile_data['hinge_pavd'] = result['hinge_pavd']
+                profile_data['weighted_pavd'] = result['weighted_pavd']
+
+            profile_df = pd.DataFrame(profile_data)
 
             profile_file = output_path / f'{scan_pos}_{result["scan_name"]}_profiles.csv'
             profile_df.to_csv(profile_file, index=False)
@@ -363,6 +374,11 @@ def main():
         action='store_true',
         help='Skip scans that already have output files'
     )
+    parser.add_argument(
+        '--linear-only',
+        action='store_true',
+        help='Only compute linear PAVD profiles (skip hinge and solid-angle weighted)'
+    )
 
     args = parser.parse_args()
 
@@ -408,7 +424,8 @@ def main():
             min_h=args.min_height,
             max_h=args.max_height,
             reflectance_threshold=args.reflectance_threshold,
-            method=args.method
+            method=args.method,
+            linear_only=args.linear_only
         )
 
         if not result['success']:

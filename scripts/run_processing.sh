@@ -35,6 +35,9 @@ MAX_PARALLEL=4
 # Skip existing output
 SKIP_EXISTING=false
 
+# Linear-only PAVD profiles
+LINEAR_ONLY=false
+
 # Projects file (default: projects.txt in script directory)
 PROJECTS_FILE=""
 
@@ -203,10 +206,14 @@ run_profiles() {
         return 0
     fi
 
-    # Build skip-existing flag
+    # Build optional flags
     local SKIP_FLAG=""
     if [ "$SKIP_EXISTING" = true ]; then
         SKIP_FLAG="--skip-existing"
+    fi
+    local LINEAR_FLAG=""
+    if [ "$LINEAR_ONLY" = true ]; then
+        LINEAR_FLAG="--linear-only"
     fi
 
     if python "$SCRIPT_DIR/batch_pavd_profiles.py" \
@@ -216,11 +223,12 @@ run_profiles() {
         --min-zenith 35 \
         --max-zenith 70 \
         --min-height 0 \
-        --max-height 50 \
+        --max-height 100 \
         --reflectance-threshold -20 \
         --method WEIGHTED \
         --output "$PROFILES_OUTPUT" \
         $SKIP_FLAG \
+        $LINEAR_FLAG \
         "$RISCAN_DIR"; then
         echo "SUCCESS: $TASK_NAME completed"
         SUCCESSFUL_TASKS+=("$TASK_NAME")
@@ -581,6 +589,7 @@ usage() {
     echo "  --parallel            Run projects in parallel instead of sequentially"
     echo "  --max-parallel N      Maximum number of parallel projects (default: 4)"
     echo "  --skip-existing       Skip processing if output directory already has files"
+    echo "  --linear-only         Only compute linear PAVD profiles (skip hinge and weighted)"
     echo "  --no-monitor          Disable resource monitoring"
     echo ""
     echo "Output structure:"
@@ -642,6 +651,10 @@ while [ $# -gt 0 ]; do
             ;;
         --skip-existing)
             SKIP_EXISTING=true
+            shift
+            ;;
+        --linear-only)
+            LINEAR_ONLY=true
             shift
             ;;
         -h|--help|help)
